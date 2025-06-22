@@ -1,0 +1,607 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/p5.js/1.4.2/p5.min.js"></script>
+  <link href="output.css" rel="stylesheet">
+  <style>
+    body { font-family: 'Arial', sans-serif; background: #e9ecef; min-height: 100vh; color: #333; margin: 0; padding: 20px; }
+    .step { display: none; max-width: 1000px; margin: 0 auto; padding: 20px; background: #fff; border: 1px solid #ccc; border-radius: 5px; box-shadow: 0 2px 5px rgba(0,0,0,0.1); }
+    .step.active { display: block; }
+    .top-section { background: #d1ecf1; padding: 10px; border: 1px solid #bee5eb; border-radius: 3px; margin-bottom: 15px; }
+    .bottom-section { display: flex; gap: 15px; }
+    .panel-yellow { background: #fff3cd; padding: 10px; border: 1px solid #ffeeba; border-radius: 3px; flex: 1; }
+    .panel-purple { background: #e6e6fa; padding: 10px; border: 1px solid #d8bfd8; border-radius: 3px; flex: 1; }
+    .panel-gray { background: #e2e3e5; padding: 10px; border: 1px solid #d6d8db; border-radius: 3px; flex: 2; }
+    .panel-title { font-weight: bold; margin-bottom: 5px; }
+    .switch { width: 50px; height: 24px; background: #ccc; border-radius: 12px; position: relative; cursor: pointer; display: inline-block; vertical-align: middle; }
+    .switch.on { background: #28a745; }
+    .switch .slider { width: 20px; height: 20px; background: #fff; border-radius: 50%; position: absolute; top: 2px; left: 2px; transition: 0.3s; }
+    .switch.on .slider { transform: translateX(26px); }
+    .status-light { width: 12px; height: 12px; border-radius: 50%; display: inline-block; margin-left: 5px; vertical-align: middle; }
+    .green { background: #28a745; }
+    .yellow { background: #ffc107; }
+    .red { background: #dc3545; }
+    .button { padding: 5px 10px; background: #007bff; color: #fff; border: none; border-radius: 3px; cursor: pointer; margin-right: 10px; }
+    .button:disabled { background: #6c757d; cursor: not-allowed; }
+    .progress-bar { height: 15px; background: #e9ecef; border-radius: 7px; overflow: hidden; display: inline-block; vertical-align: middle; width: 150px; margin-left: 10px; }
+    .progress { height: 100%; background: #007bff; transition: width 0.5s; }
+    canvas { border: 1px solid #ccc; border-radius: 3px; }
+    .load-option { display: inline-block; margin-right: 15px; }
+    .load-option input { margin-right: 5px; vertical-align: middle; }
+    .data-row { margin: 5px 0; }
+    .data-label { font-weight: bold; margin-right: 10px; }
+    .quiz-item { margin-bottom: 20px; position: relative; }
+    .quiz-question { font-weight: bold; margin-bottom: 5px; }
+    .quiz-option { margin-left: 20px; margin-bottom: 5px; }
+    .quiz-feedback { margin-top: 5px; color: #28a745; display: none; }
+    .incorrect { color: #dc3545; }
+    .quiz-image { width: 50px; height: 50px; cursor: pointer; margin-left: 10px; vertical-align: middle; }
+    .image-description { display: none; position: absolute; background: #fff; border: 1px solid #ccc; padding: 5px; border-radius: 3px; z-index: 10; }
+    #quiz-progress { margin-top: 10px; font-weight: bold; }
+    .match-item { width: 60px; height: 60px; background-size: cover; display: inline-block; margin: 5px; cursor: pointer; border: 2px solid #ccc; }
+    .match-item.matched { border-color: #28a745; }
+    .star-animation { position: absolute; font-size: 20px; color: yellow; opacity: 0; animation: starFade 1s; }
+    @keyframes starFade { 0% { opacity: 1; } 100% { opacity: 0; } }
+    .checklist-item { margin: 5px 0; cursor: pointer; }
+    .checklist-item.completed { text-decoration: line-through; color: #28a745; }
+    .action-progress { height: 10px; background: #ddd; border-radius: 5px; overflow: hidden; margin-top: 5px; }
+    .action-progress-bar { height: 100%; background: #007bff; width: 0; transition: width 1s; }
+    .chart-data { cursor: pointer; color: #007bff; margin: 5px 0; }
+  </style>
+</head>
+<body>
+  <h1 class="text-3xl font-bold text-center mb-6">光伏實驗互動教程</h1>
+
+  <div id="step1" class="step active">
+    <h2 class="text-2xl font-semibold text-blue-700 mb-4">步驟 1: 認識實驗器材</h2>
+    <p class="mb-4">通過選擇題學習器材功能，答對後完成學習！點擊圖片查看詳情。</p>
+    <div id="quiz-progress">當前得分: 0/7</div>
+    <div class="quiz-item" data-question="q1">
+      <div class="quiz-question">PFS-85 太陽能光伏電池板的用途是？ <img src="https://ppt.cc/fssg1x@.png" alt="PFS-85" class="quiz-image" onclick="toggleDescription('q1')"></div>
+      <div class="quiz-option"><input type="radio" name="q1" value="a" onclick="checkAnswer('q1', 'a')"> a) 將太陽光轉換為電能</div>
+      <div class="quiz-option"><input type="radio" name="q1" value="b" onclick="checkAnswer('q1', 'b')"> b) 儲存電能</div>
+      <div class="quiz-option"><input type="radio" name="q1" value="c" onclick="checkAnswer('q1', 'c')"> c) 監測電壓和電流</div>
+      <div id="q1-feedback" class="quiz-feedback"></div>
+      <div id="q1-description" class="image-description">特寫: PFS-85 光伏板，通過光電效應轉換太陽能。</div>
+    </div>
+    <div class="quiz-item" data-question="q2">
+      <div class="quiz-question">DL 9021 測量模組的主要功能是？ <img src="https://ppt.cc/fYghsx@.png" alt="DL 9021" class="quiz-image" onclick="toggleDescription('q2')"></div>
+      <div class="quiz-option"><input type="radio" name="q2" value="a" onclick="checkAnswer('q2', 'a')"> a) 實時監測電壓、電流和功率</div>
+      <div class="quiz-option"><input type="radio" name="q2" value="b" onclick="checkAnswer('q2', 'b')"> b) 模擬太陽光照</div>
+      <div class="quiz-option"><input type="radio" name="q2" value="c" onclick="checkAnswer('q2', 'c')"> c) 保護電池免於過充</div>
+      <div id="q2-feedback" class="quiz-feedback"></div>
+      <div id="q2-description" class="image-description">特寫: DL 9021 模組，精確測量系統參數。</div>
+    </div>
+    <div class="quiz-item" data-question="q3">
+      <div class="quiz-question">DL 9012S 充電調節器的作用是？ <img src="https://ppt.cc/f9j5px@.jpg" alt="DL 9012S" class="quiz-image" onclick="toggleDescription('q3')"></div>
+      <div class="quiz-option"><input type="radio" name="q3" value="a" onclick="checkAnswer('q3', 'a')"> a) 提供負載測試</div>
+      <div class="quiz-option"><input type="radio" name="q3" value="b" onclick="checkAnswer('q3', 'b')"> b) 調整環境溫度</div>
+      <div class="quiz-option"><input type="radio" name="q3" value="c" onclick="checkAnswer('q3', 'c')"> c) 使用MPPT技術優化充電效率</div>
+      <div id="q3-feedback" class="quiz-feedback"></div>
+      <div id="q3-description" class="image-description">特寫: DL 9012S 調節器，內置MPPT算法。</div>
+    </div>
+    <div class="quiz-item" data-question="q4">
+      <div class="quiz-question">DL 9014 電池保護開關的功能是？ <img src="https://ppt.cc/fPmZyx@.png" alt="DL 9014" class="quiz-image" onclick="toggleDescription('q4')"></div>
+      <div class="quiz-option"><input type="radio" name="q4" value="a" onclick="checkAnswer('q4', 'a')"> a) 將太陽光轉換為電能</div>
+      <div class="quiz-option"><input type="radio" name="q4" value="b" onclick="checkAnswer('q4', 'b')"> b) 儲存電能</div>
+      <div class="quiz-option"><input type="radio" name="q4" value="c" onclick="checkAnswer('q4', 'c')"> c) 防止過充或過放</div>
+      <div id="q4-feedback" class="quiz-feedback"></div>
+      <div id="q4-description" class="image-description">特寫: DL 9014 開關，保護電池安全。</div>
+    </div>
+    <div class="quiz-item" data-question="q5">
+      <div class="quiz-question">DL 9044 燈模組的用途是？ <img src="https://ppt.cc/fPmZyx@.png" alt="DL 9044" class="quiz-image" onclick="toggleDescription('q5')"></div>
+      <div class="quiz-option"><input type="radio" name="q5" value="a" onclick="checkAnswer('q5', 'a')"> a) 監測環境溫度</div>
+      <div class="quiz-option"><input type="radio" name="q5" value="b" onclick="checkAnswer('q5', 'b')"> b) 提供太陽光照</div>
+      <div class="quiz-option"><input type="radio" name="q5" value="c" onclick="checkAnswer('q5', 'c')"> c) 模擬負載測試能量輸出</div>
+      <div id="q5-feedback" class="quiz-feedback"></div>
+      <div id="q5-description" class="image-description">特寫: DL 9044 燈模組，測試能量輸出。</div>
+    </div>
+    <div class="quiz-item" data-question="q6">
+      <div class="quiz-question">BATTERY-SW 12V電池的作用是？ <img src="https://ppt.cc/ff5LAx@.png" alt="BATTERY-SW" class="quiz-image" onclick="toggleDescription('q6')"></div>
+      <div class="quiz-option"><input type="radio" name="q6" value="a" onclick="checkAnswer('q6', 'a')"> a) 監測電壓和電流</div>
+      <div class="quiz-option"><input type="radio" name="q6" value="b" onclick="checkAnswer('q6', 'b')"> b) 將太陽光轉換為電能</div>
+      <div class="quiz-option"><input type="radio" name="q6" value="c" onclick="checkAnswer('q6', 'c')"> c) 儲存電能，容量27Ah</div>
+      <div id="q6-feedback" class="quiz-feedback"></div>
+      <div id="q6-description" class="image-description">特寫: BATTERY-SW 電池，容量27Ah供電。</div>
+    </div>
+    <div class="quiz-item" data-question="q7">
+      <div class="quiz-question">DL SIMSUN 鹵素燈框架的用途是？ <img src="https://ppt.cc/f8wPsx@.jpg" alt="DL SIMSUN" class="quiz-image" onclick="toggleDescription('q7')"></div>
+      <div class="quiz-option"><input type="radio" name="q7" value="a" onclick="checkAnswer('q7', 'a')"> a) 防止過充或過放</div>
+      <div class="quiz-option"><input type="radio" name="q7" value="b" onclick="checkAnswer('q7', 'b')"> b) 儲存電能</div>
+      <div class="quiz-option"><input type="radio" name="q7" value="c" onclick="checkAnswer('q7', 'c')"> c) 模擬太陽光照</div>
+      <div id="q7-feedback" class="quiz-feedback"></div>
+      <div id="q7-description" class="image-description">特寫: DL SIMSUN 框架，模擬光照條件。</div>
+    </div>
+    <button id="nextButtonStep1" onclick="nextStep()" class="button mt-4" disabled>下一步: 實驗設置</button>
+  </div>
+
+  <div id="step2" class="step">
+    <h2 class="text-2xl font-semibold text-blue-700 mb-4">步驟 2: 實驗設置</h2>
+    <p class="mb-4">通過點擊完成以下步驟，模擬真實光伏系統運行條件。</p>
+    <div class="mb-4">
+      <h3 class="text-lg font-medium text-blue-600 mb-2">1. 調整輻照度</h3>
+      <label for="irradiance" class="block text-sm font-medium text-gray-700">設置輻照度 (W/m²):</label>
+      <input type="range" id="irradiance" min="100" max="1000" value="300" onchange="updateIrradiance()" class="mt-1 w-1/2">
+      <p class="mt-2">當前輻照度: <span id="currentIrradiance" class="text-blue-600 font-medium">300</span> W/m²</p>
+      <div class="checklist-item" data-item="irradiance">使用 DL SIMSUN 鹵素燈框架調整燈與光伏板距離 (30-50cm)</div>
+      <div class="checklist-item" data-item="measure">用 DL 9021 測量模組測量輻照度 (200-800 W/m²)</div>
+      <div id="step2-feedback" class="quiz-feedback"></div>
+    </div>
+    <div class="mb-4">
+      <h3 class="text-lg font-medium text-blue-600 mb-2">2. 連接器材</h3>
+      <div class="checklist-item" data-item="connect1">將 PFS-85 光伏板正極連接到 DL 9012S 輸入正極</div>
+      <div class="checklist-item" data-item="connect2">將 DL 9012S 輸出連接到 BATTERY-SW 12V電池</div>
+      <div class="checklist-item" data-item="connect3">啟動 DL 9014 電池保護開關，設定保護值</div>
+      <div class="checklist-item" data-item="connect4">連接 DL 9044 燈模組作為負載</div>
+    </div>
+    <div class="mb-4">
+      <h3 class="text-lg font-medium text-blue-600 mb-2">3. 安全檢查與校準</h3>
+      <div class="checklist-item" data-item="check">檢查接線牢固性並用 DL 9021 校準電壓</div>
+    </div>
+    <button id="nextButtonStep2" onclick="nextStep()" class="button" disabled>下一步: 進行實驗</button>
+  </div>
+
+  <div id="step3" class="step">
+    <h2 class="text-2xl font-semibold text-blue-700 mb-4">步驟 3: 進行實驗</h2>
+    <div class="top-section">
+      <div class="panel-title">光伏控制面板</div>
+      <div class="data-row">
+        <span class="data-label">系統狀態:</span>
+        <span class="switch" id="systemSwitch" onclick="toggleSystem()">
+          <span class="slider"></span>
+        </span>
+        <span id="systemStatus">關閉</span>
+      </div>
+      <div class="data-row">
+        <span class="data-label">電池狀態:</span>
+        <span id="batteryStatus">50</span>% (<span id="batteryVoltage">12.6</span>V)
+        <span id="statusLight" class="status-light green"></span>
+      </div>
+      <div class="data-row">
+        <span class="data-label">光伏輸出:</span>
+        <span id="pvOutput">0</span>V, <span id="pvCurrent">0</span>A
+      </div>
+    </div>
+
+    <div class="bottom-section">
+      <div class="panel-yellow">
+        <div class="panel-title">環境調整</div>
+        <div class="data-row">
+          <span class="data-label">溫度 (°C):</span>
+          <input type="range" id="temperature" min="20" max="50" value="30" onchange="updateTemperature()" style="vertical-align: middle; width: 150px;">
+          <span id="currentTemperature">30</span>
+        </div>
+        <p>操作: 調整溫度範圍20-50°C，影響充電效率。</p>
+      </div>
+
+      <div class="panel-purple">
+        <div class="panel-title">負載選擇</div>
+        <div class="data-row">
+          <label class="load-option"><input type="radio" name="load" value="led" onclick="selectLoad('led')"> LED (12W)</label>
+          <label class="load-option"><input type="radio" name="load" value="bulb" onclick="selectLoad('bulb')"> Bulb (20W)</label>
+          <span id="currentLoad">無負載</span>
+        </div>
+        <p>操作: 選擇 DL 9044 燈模組負載。</p>
+      </div>
+
+      <div class="panel-gray">
+        <div class="panel-title">充電/放電控制</div>
+        <div class="data-row">
+          <button id="chargeButton" onclick="chargeBattery()" class="button" disabled>充電</button>
+          <div class="action-progress"><div id="chargeProgress" class="action-progress-bar"></div></div>
+        </div>
+        <div class="data-row">
+          <button id="dischargeButton" onclick="dischargeBattery()" class="button" disabled>放電</button>
+          <div class="action-progress"><div id="dischargeProgress" class="action-progress-bar"></div></div>
+        </div>
+        <p>操作: 按「充電」或「放電」模擬過程，觀察變化。</p>
+        <div class="panel-title mt-4">監控與記錄</div>
+        <div class="data-row">
+          <span class="data-label">能量趨勢:</span>
+          <canvas id="energyChart" width="200" height="100"></canvas>
+        </div>
+        <div class="data-row">
+          <span class="data-label">反饋:</span>
+          <span id="energyFeedback"></span>
+        </div>
+        <p>操作: 記錄 DL 9021 數據，觀察趨勢。</p>
+        <div class="panel-title mt-4">實驗進度</div>
+        <div class="data-row">
+          <span class="data-label">進度:</span>
+          <div class="progress-bar">
+            <div id="taskProgress" class="progress" style="width: 0%;"></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <button id="nextButton" onclick="nextStep()" class="button mt-4" disabled>下一步: 實驗分析</button>
+  </div>
+
+  <div id="step4" class="step">
+    <h2 class="text-2xl font-semibold text-blue-700 mb-4">步驟 4: 實驗分析</h2>
+    <p class="mb-4">點擊數據查看詳細解釋，總結學習內容。</p>
+    <ul class="list-disc pl-6 mb-4 text-gray-700">
+      <li><strong>能量流動分析</strong>: 初始電量50%，充電增加10%（若執行），放電減少4%，最終電量 <span id="finalBatteryStatus" class="chart-data" onclick="showDetail('finalBattery')">50</span>%，電壓 <span id="finalVoltage" class="chart-data" onclick="showDetail('finalVoltage')">12.6</span>V。</li>
+      <li><strong>能量效率計算</strong>: 效率約 <span id="efficiency" class="chart-data" onclick="showDetail('efficiency')">75</span>%，受輻照度 <span id="currentIrradianceFinal" class="chart-data" onclick="showDetail('irradiance')">300</span> W/m²和溫度 <span id="currentTemperatureFinal" class="chart-data" onclick="showDetail('temperature')">30</span>°C影響。</li>
+      <li><strong>環境因素影響</strong>: 輻照度增加產能，溫度>40°C降低5-10%效率。</li>
+      <li><strong>器材功能與表現</strong>: PFS-85 根據輻照度輸出，DL 9012S 優化充電，DL 9044 消耗20W。</li>
+      <li><strong>應用與改進建議</strong>: 適用小型離網系統，建議增加負載測試。</li>
+    </ul>
+    <div id="detailPopup" style="display:none; position:fixed; top:50%; left:50%; transform:translate(-50%,-50%); background:#fff; padding:20px; border:1px solid #ccc; border-radius:5px; z-index:1000;">
+      <span id="detailContent"></span><br><button onclick="hideDetail()">關閉</button>
+    </div>
+    <p class="text-gray-600 mb-4">總結: 掌握光伏系統設置與分析方法。</p>
+    <button onclick="resetExperiment()" class="button">重新開始</button>
+  </div>
+
+  <script>
+    let currentStep = 1;
+    let irradiance = 300;
+    let batteryLevel = 50;
+    let batteryVoltage = 12.6;
+    let systemOn = false;
+    let currentLoad = null;
+    let temperature = 30;
+    let energyData = [50];
+    let tasksCompleted = 0;
+    let quizCompleted = 0;
+    let checklistCompleted = 0;
+
+    const hints = [
+      "想想與太陽光相關的功能。",
+      "這與數據監測有關。",
+      "考慮充電優化技術。",
+      "這保護電池安全。",
+      "負載測試與燈有關。",
+      "電池用於儲存。",
+      "光照模擬用這個。"
+    ];
+
+    function nextStep() {
+      document.getElementById(`step${currentStep}`).classList.remove('active');
+      currentStep++;
+      document.getElementById(`step${currentStep}`).classList.add('active');
+      if (currentStep === 4) {
+        document.getElementById('finalBatteryStatus').textContent = batteryLevel;
+        document.getElementById('finalVoltage').textContent = batteryVoltage.toFixed(1);
+        document.getElementById('efficiency').textContent = Math.min(100, Math.max(50, batteryLevel + (irradiance / 1000) * 25 * (temperature > 40 ? 0.9 : 1))).toFixed(0);
+        document.getElementById('currentIrradianceFinal').textContent = irradiance;
+        document.getElementById('currentTemperatureFinal').textContent = temperature;
+      }
+    }
+
+    function updateIrradiance() {
+      const irradianceInput = document.getElementById('irradiance');
+      if (irradianceInput) {
+        irradiance = irradianceInput.value;
+        document.getElementById('currentIrradiance').textContent = irradiance;
+        if (systemOn) updatePvOutput();
+      }
+    }
+
+    function updateTemperature() {
+      const tempInput = document.getElementById('temperature');
+      if (tempInput) {
+        temperature = tempInput.value;
+        document.getElementById('currentTemperature').textContent = temperature;
+        if (systemOn) updatePvOutput();
+      }
+    }
+
+    function toggleSystem() {
+      systemOn = !systemOn;
+      const switchElement = document.getElementById('systemSwitch');
+      const statusElement = document.getElementById('systemStatus');
+      if (switchElement && statusElement) {
+        switchElement.classList.toggle('on');
+        statusElement.textContent = systemOn ? '開啟' : '關閉';
+        document.getElementById('chargeButton').disabled = !systemOn;
+        document.getElementById('dischargeButton').disabled = !systemOn || !currentLoad;
+        document.getElementById('nextButton').disabled = !systemOn || batteryLevel <= 20 || batteryLevel >= 100;
+        if (systemOn) updatePvOutput();
+      }
+    }
+
+    function selectLoad(type) {
+      currentLoad = type;
+      const loadDisplay = document.getElementById('currentLoad');
+      if (loadDisplay) {
+        loadDisplay.textContent = type === 'led' ? 'LED (12W)' : type === 'bulb' ? 'Bulb (20W)' : '無負載';
+        document.getElementById('dischargeButton').disabled = !systemOn || !currentLoad;
+      }
+    }
+
+    function chargeBattery() {
+      if (!systemOn) return;
+      let tempEfficiency = temperature > 40 ? 0.9 : 1;
+      let pvPower = (irradiance / 1000) * 50 * tempEfficiency;
+      const progress = document.getElementById('chargeProgress');
+      if (progress) {
+        let width = 0;
+        const interval = setInterval(() => {
+          if (width >= 100) {
+            clearInterval(interval);
+            batteryLevel += 10 * tempEfficiency;
+            batteryVoltage = 12.6 + (batteryLevel / 100) * 0.4;
+            if (batteryLevel > 100) batteryLevel = 100;
+            updateBatteryDisplay();
+            energyData.push(batteryLevel);
+            drawChart();
+            const feedback = document.getElementById('energyFeedback');
+            if (feedback) feedback.textContent = `充電完成，增加: +${(10 * tempEfficiency).toFixed(1)}%，功率: ${pvPower.toFixed(1)}W，電壓: ${batteryVoltage.toFixed(1)}V`;
+            tasksCompleted++;
+            updateProgress();
+            checkCompletion();
+          } else {
+            width += 10;
+            progress.style.width = `${width}%`;
+          }
+        }, 100);
+      }
+    }
+
+    function dischargeBattery() {
+      if (!systemOn || !currentLoad) return;
+      let energyUsed = currentLoad === 'led' ? 4 : 6;
+      const progress = document.getElementById('dischargeProgress');
+      if (progress) {
+        let width = 0;
+        const interval = setInterval(() => {
+          if (width >= 100) {
+            clearInterval(interval);
+            batteryLevel -= energyUsed;
+            batteryVoltage = 12.6 - ((100 - batteryLevel) / 100) * 0.6;
+            if (batteryLevel < 20) batteryLevel = 20;
+            updateBatteryDisplay();
+            energyData.push(batteryLevel);
+            drawChart();
+            const feedback = document.getElementById('energyFeedback');
+            if (feedback) feedback.textContent = `放電完成，減少: -${energyUsed}%，剩餘: ${batteryLevel}%，電壓: ${batteryVoltage.toFixed(1)}V`;
+            tasksCompleted++;
+            updateProgress();
+            checkCompletion();
+          } else {
+            width += 10;
+            progress.style.width = `${width}%`;
+          }
+        }, 100);
+      }
+    }
+
+    function updateBatteryDisplay() {
+      const status = document.getElementById('batteryStatus');
+      const voltage = document.getElementById('batteryVoltage');
+      const light = document.getElementById('statusLight');
+      if (status && voltage && light) {
+        status.textContent = batteryLevel;
+        voltage.textContent = batteryVoltage.toFixed(1);
+        if (batteryLevel > 80) light.className = 'status-light green';
+        else if (batteryLevel > 40) light.className = 'status-light yellow';
+        else light.className = 'status-light red';
+        updatePvOutput();
+      }
+    }
+
+    function updatePvOutput() {
+      const output = document.getElementById('pvOutput');
+      const current = document.getElementById('pvCurrent');
+      if (output && current) {
+        let tempEfficiency = temperature > 40 ? 0.9 : 1;
+        let pvVoltage = (irradiance / 1000) * 15 * tempEfficiency + 12;
+        let pvCurrentValue = (irradiance / 1000) * 5 * tempEfficiency;
+        output.textContent = pvVoltage.toFixed(1);
+        current.textContent = pvCurrentValue.toFixed(1);
+      }
+    }
+
+    function drawChart() {
+      const canvas = document.getElementById('energyChart');
+      if (canvas) {
+        const ctx = canvas.getContext('2d');
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+        ctx.beginPath();
+        ctx.moveTo(0, canvas.height - (energyData[0] / 100) * canvas.height);
+        for (let i = 1; i < energyData.length; i++) {
+          ctx.lineTo((i / energyData.length) * canvas.width, canvas.height - (energyData[i] / 100) * canvas.height);
+        }
+        ctx.strokeStyle = '#007bff';
+        ctx.stroke();
+      }
+    }
+
+    function updateProgress() {
+      const progress = document.getElementById('taskProgress');
+      if (progress) {
+        const progressValue = (tasksCompleted / 2) * 100;
+        progress.style.width = `${Math.min(progressValue, 100)}%`;
+      }
+    }
+
+    function checkCompletion() {
+      const nextButton = document.getElementById('nextButton');
+      if (nextButton) {
+        nextButton.disabled = tasksCompleted < 2 || batteryLevel <= 20 || batteryLevel >= 100;
+      }
+    }
+
+    function resetExperiment() {
+      currentStep = 1;
+      irradiance = 300;
+      batteryLevel = 50;
+      batteryVoltage = 12.6;
+      systemOn = false;
+      currentLoad = null;
+      temperature = 30;
+      energyData = [50];
+      tasksCompleted = 0;
+      quizCompleted = 0;
+      checklistCompleted = 0;
+
+      const irradianceInput = document.getElementById('irradiance');
+      const tempInput = document.getElementById('temperature');
+      const currentIrradiance = document.getElementById('currentIrradiance');
+      const currentTemp = document.getElementById('currentTemperature');
+      const systemSwitch = document.getElementById('systemSwitch');
+      const systemStatus = document.getElementById('systemStatus');
+      const currentLoadDisplay = document.getElementById('currentLoad');
+      const pvOutput = document.getElementById('pvOutput');
+      const pvCurrent = document.getElementById('pvCurrent');
+      const energyFeedback = document.getElementById('energyFeedback');
+      const taskProgress = document.getElementById('taskProgress');
+      const finalBatteryStatus = document.getElementById('finalBatteryStatus');
+      const finalVoltage = document.getElementById('finalVoltage');
+      const efficiency = document.getElementById('efficiency');
+      const currentIrradianceFinal = document.getElementById('currentIrradianceFinal');
+      const currentTempFinal = document.getElementById('currentTemperatureFinal');
+      const chargeButton = document.getElementById('chargeButton');
+      const dischargeButton = document.getElementById('dischargeButton');
+      const nextButton = document.getElementById('nextButton');
+      const chargeProgress = document.getElementById('chargeProgress');
+      const dischargeProgress = document.getElementById('dischargeProgress');
+      const quizProgress = document.getElementById('quiz-progress');
+      const radioInputs = document.querySelectorAll('input[type="radio"]');
+      const quizFeedbacks = document.querySelectorAll('.quiz-feedback');
+      const imageDescriptions = document.querySelectorAll('.image-description');
+      const matchItems = document.querySelectorAll('.match-item');
+      const checklistItems = document.querySelectorAll('.checklist-item');
+      const step2Feedback = document.getElementById('step2-feedback');
+      const nextButtonStep1 = document.getElementById('nextButtonStep1');
+      const nextButtonStep2 = document.getElementById('nextButtonStep2');
+
+      if (irradianceInput) irradianceInput.value = 300;
+      if (tempInput) tempInput.value = 30;
+      if (currentIrradiance) currentIrradiance.textContent = 300;
+      if (currentTemp) currentTemp.textContent = 30;
+      if (systemSwitch) systemSwitch.classList.remove('on');
+      if (systemStatus) systemStatus.textContent = '關閉';
+      if (currentLoadDisplay) currentLoadDisplay.textContent = '無負載';
+      updateBatteryDisplay();
+      if (pvOutput) pvOutput.textContent = '0';
+      if (pvCurrent) pvCurrent.textContent = '0';
+      if (energyFeedback) energyFeedback.textContent = '';
+      if (taskProgress) taskProgress.style.width = '0%';
+      if (finalBatteryStatus) finalBatteryStatus.textContent = 50;
+      if (finalVoltage) finalVoltage.textContent = 12.6;
+      if (efficiency) efficiency.textContent = 75;
+      if (currentIrradianceFinal) currentIrradianceFinal.textContent = 300;
+      if (currentTempFinal) currentTempFinal.textContent = 30;
+      if (chargeButton) chargeButton.disabled = true;
+      if (dischargeButton) dischargeButton.disabled = true;
+      if (nextButton) nextButton.disabled = true;
+      if (chargeProgress) chargeProgress.style.width = '0%';
+      if (dischargeProgress) dischargeProgress.style.width = '0%';
+      drawChart();
+      document.querySelectorAll('.step').forEach(step => step.classList.remove('active'));
+      if (document.getElementById('step1')) document.getElementById('step1').classList.add('active');
+      if (quizProgress) quizProgress.textContent = `當前得分: ${quizCompleted}/7`;
+      if (radioInputs) radioInputs.forEach(input => input.checked = false);
+      if (quizFeedbacks) quizFeedbacks.forEach(feedback => feedback.style.display = 'none');
+      if (imageDescriptions) imageDescriptions.forEach(desc => desc.style.display = 'none');
+      if (matchItems) matchItems.forEach(item => item.classList.remove('matched'));
+      if (matchItems) matchItems.forEach(item => item.style.opacity = '1');
+      if (checklistItems) checklistItems.forEach(item => item.classList.remove('completed'));
+      if (step2Feedback) step2Feedback.style.display = 'none';
+      if (nextButtonStep1) nextButtonStep1.disabled = true;
+      if (nextButtonStep2) nextButtonStep2.disabled = true;
+    }
+
+    function toggleDescription(questionId) {
+      const description = document.getElementById(`${questionId}-description`);
+      if (description) {
+        description.style.display = description.style.display === 'block' ? 'none' : 'block';
+      }
+    }
+
+    function checkAnswer(questionId, selectedAnswer) {
+      const feedback = document.getElementById(`${questionId}-feedback`);
+      const correctAnswers = { 'q1': 'a', 'q2': 'a', 'q3': 'c', 'q4': 'c', 'q5': 'c', 'q6': 'c', 'q7': 'c' };
+      if (feedback) {
+        if (selectedAnswer === correctAnswers[questionId]) {
+          feedback.textContent = '回答正確！';
+          feedback.className = 'quiz-feedback';
+          showStarAnimation(questionId);
+        } else {
+          const randomHint = hints[parseInt(Math.random() * hints.length)];
+          feedback.textContent = `錯誤！提示: ${randomHint}`;
+          feedback.className = 'quiz-feedback incorrect';
+        }
+        feedback.style.display = 'block';
+        quizCompleted++;
+        const quizProgress = document.getElementById('quiz-progress');
+        if (quizProgress) quizProgress.textContent = `當前得分: ${quizCompleted}/7`;
+        const progressBar = document.getElementById('taskProgress');
+        if (progressBar) progressBar.style.width = `${(quizCompleted / 7) * 100}%`;
+        if (quizCompleted === 7) {
+          const nextButtonStep1 = document.getElementById('nextButtonStep1');
+          if (nextButtonStep1) nextButtonStep1.disabled = false;
+          alert(`恭喜！完成所有問題，得分: ${quizCompleted}/7！`);
+        }
+      }
+    }
+
+    function matchItem(questionId, answer, element) {
+      // Removed matching logic since it's no longer needed
+    }
+
+    function showStarAnimation(questionId) {
+      const item = document.querySelector(`.quiz-item[data-question="${questionId}"]`);
+      if (item) {
+        const star = document.createElement('div');
+        star.className = 'star-animation';
+        star.textContent = '★';
+        star.style.left = '50%';
+        star.style.top = '50%';
+        item.appendChild(star);
+        setTimeout(() => star.remove(), 1000);
+      }
+    }
+
+    function toggleChecklist(itemId) {
+      const checklistItems = document.querySelectorAll('.checklist-item');
+      let targetItem = null;
+      checklistItems.forEach(item => {
+        if (item.getAttribute('data-item') === itemId) {
+          targetItem = item;
+        }
+      });
+      if (targetItem && !targetItem.classList.contains('completed')) {
+        targetItem.classList.add('completed');
+        checklistCompleted++;
+        if (checklistCompleted === 6) {
+          const feedback = document.getElementById('step2-feedback');
+          if (feedback) {
+            feedback.textContent = '所有步驟完成！';
+            feedback.style.display = 'block';
+          }
+          const nextButtonStep2 = document.getElementById('nextButtonStep2');
+          if (nextButtonStep2) nextButtonStep2.disabled = false;
+        }
+      }
+    }
+
+    function showDetail(id) {
+      const details = {
+        'finalBattery': '最終電池電量受充電和放電影響，範圍20-100%。',
+        'finalVoltage': '電壓隨電量變化，滿電約13V，過放約11.5V。',
+        'efficiency': '效率由輻照度和溫度決定，最高100%。',
+        'irradiance': '輻照度影響光伏輸出，300W/m²為中等水平。',
+        'temperature': '溫度>40°C降低效率，25-40°C為最佳範圍。'
+      };
+      const content = document.getElementById('detailContent');
+      const popup = document.getElementById('detailPopup');
+      if (content && popup) {
+        content.textContent = details[id];
+        popup.style.display = 'block';
+      }
+    }
+
+    function hideDetail() {
+      const popup = document.getElementById('detailPopup');
+      if (popup) popup.style.display = 'none';
+    }
+
+    document.addEventListener('DOMContentLoaded', resetExperiment);
+  </script>
+</body>
+</html>
